@@ -1,14 +1,26 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from typing import Dict, List, Tuple
 from sqlalchemy.future import select
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.auth import decode_jwt
 from app.database import AsyncSessionLocal
 from app.models import Message
 from app.models import Conversation
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 
