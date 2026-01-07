@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 app = FastAPI()
 
@@ -12,7 +12,11 @@ def root():
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
-    while True:
-        data = await websocket.receive_text()
-        print("Received:", data)
-        await websocket.send_text(f"Echo: {data} from server")
+    try:
+        while True:
+            data = await websocket.receive_text()
+            print("Received:", data)
+            await websocket.send_text(f"Echo: {data}")
+
+    except WebSocketDisconnect:
+        print("Client disconnected")
