@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from typing import Dict, List
+from app.auth import decode_jwt
 
 app = FastAPI()
 
@@ -44,13 +45,20 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
-
 @app.websocket("/ws/chat/{conversation_id}")
 async def websocket_chat(
     websocket: WebSocket,
     conversation_id: str,
-    user_id: str = Query(...)
+    token: str = Query(...)
 ):
+    payload = decode_jwt(token)
+
+    if not payload:
+        await websocket.close(code=1008)
+        return
+
+    user_id = str(payload["user_id"])
+
     await manager.connect(conversation_id, websocket, user_id)
 
     try:
@@ -67,4 +75,4 @@ async def websocket_chat(
 
     except WebSocketDisconnect:
         manager.disconnect(conversation_id, websocket)
-        print(f"User {user_id} left room {conversation_id}")
+        print(f"User {user_id} disconnected")
