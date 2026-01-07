@@ -1,8 +1,22 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from typing import Dict, List
 from app.auth import decode_jwt
+from app.database import AsyncSessionLocal
+from app.models import Message
+
 
 app = FastAPI()
+
+async def save_message(conversation_id, sender_id, content):
+    async with AsyncSessionLocal() as session:
+        msg = Message(
+            conversation_id=conversation_id,
+            sender_id=sender_id,
+            content=content
+        )
+        session.add(msg)
+        await session.commit()
+
 
 class ConnectionManager:
     def __init__(self):
@@ -70,9 +84,16 @@ async def websocket_chat(
                 "sender_id": user_id,
                 "content": text
             }
+            await save_message(
+                conversation_id=int(conversation_id),
+                sender_id=int(user_id),
+                content=text
+            )
 
             await manager.broadcast(conversation_id, message)
 
     except WebSocketDisconnect:
         manager.disconnect(conversation_id, websocket)
         print(f"User {user_id} disconnected")
+
+
